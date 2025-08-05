@@ -33,25 +33,33 @@ export default config;
  */
 function createLocalStorage(){
   const storedReportPath = join(import.meta.dirname, 'monosize.json');
- return {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  getRemoteReport: async (_branch) => {
-    console.log({_branch})
-    const reportPath = storedReportPath;
-    const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
-    return {
-      commitSHA: 'local',
-      remoteReport: report
-    }
-  },
-  uploadReportToRemote: async () => {
-    const reportPath = join(import.meta.dirname, 'dist/bundle-size/monosize.json');
-    /** @type {import('monosize').BundleSizeReport} */
-    const report = JSON.parse(readFileSync(reportPath, 'utf-8'));
-    report.forEach(entry => {
-      entry.packageName = packageName;
-    });
-    writeFileSync(storedReportPath, JSON.stringify(report, null, 2), 'utf-8');
-  },
- }
+
+/**
+ *
+ * @param {string} reportPath
+ * @returns {import('monosize').BundleSizeReport}
+ */
+  function getReport(reportPath){
+    return JSON.parse(readFileSync(reportPath, 'utf-8'))
+  }
+
+  return {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    getRemoteReport: async (_branch) => {
+      const reportPath = storedReportPath;
+      const report = getReport(reportPath);
+      return {
+        commitSHA: 'local',
+        remoteReport: report
+      }
+    },
+    uploadReportToRemote: async () => {
+      const reportPath = join(import.meta.dirname, 'dist/bundle-size/monosize.json');
+      const report = getReport(reportPath);
+      report.forEach(entry => {
+        entry.packageName = packageName;
+      });
+      writeFileSync(storedReportPath, JSON.stringify(report, null, 2), 'utf-8');
+    },
+  }
 }
