@@ -12,7 +12,7 @@ jobs:
     if: ${{ github.repository_owner == 'microsoft' }}
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       actions: write
 
     steps:
@@ -30,24 +30,15 @@ jobs:
         run: npm run build
         working-directory: packages/react-icons
 
-      - name: Update bundle size baseline
-        run: npx monosize upload-report --branch main --commit-sha local
+      - name: Generate and upload bundle size report
+        run: |
+          npm run bundle-size
+          npx monosize upload-report --branch main --commit-sha ${{ github.sha }}
         working-directory: packages/react-icons
 
-      - name: Check for changes
-        id: check-changes
-        run: |
-          if git diff --quiet packages/react-icons/monosize-baseline.json; then
-            echo "changes=false" >> $GITHUB_OUTPUT
-          else
-            echo "changes=true" >> $GITHUB_OUTPUT
-          fi
-
-      - name: Commit and push baseline update
-        if: steps.check-changes.outputs.changes == 'true'
-        run: |
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git add packages/react-icons/monosize-baseline.json
-          git commit -m "chore(react-icons): update bundle size baseline [skip ci]"
-          git push origin HEAD:main
+      - name: Upload bundle size baseline artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: bundle-size-baseline
+          path: packages/react-icons/dist/bundle-size/monosize.json
+          retention-days: 90

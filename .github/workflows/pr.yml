@@ -167,6 +167,8 @@ jobs:
         npm run bundle-size
         npx monosize compare-reports
       working-directory: packages/react-icons
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build @fluentui/react-native-icons
       run: |

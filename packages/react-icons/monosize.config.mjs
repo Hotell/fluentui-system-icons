@@ -1,15 +1,13 @@
 // @ts-check
 import {join} from 'node:path'
-import {readFileSync, writeFileSync} from 'node:fs'
+import {readFileSync, writeFileSync, existsSync, mkdirSync} from 'node:fs'
+import {execSync} from 'node:child_process'
 import webpackBundler from 'monosize-bundler-webpack';
-
-const packageJson = JSON.parse(readFileSync(join(import.meta.dirname, 'package.json'), 'utf-8'));
-const packageName = packageJson.name;
 
 /** @type {import('monosize').MonoSizeConfig} */
 const config = {
   repository: 'https://github.com/microsoft/fluentui-system-icons',
-  storage: createLocalStorage(),
+  storage: createArtifactStorage(),
   bundler: webpackBundler(config => {
     config.module = config.module ?? {};
     config.module.rules = config.module.rules ?? [];
@@ -29,14 +27,14 @@ export default config;
 
 
 /**
-  * Creates a local storage adapter for Monosize.
-  * This adapter reads and writes bundle size reports to a local JSON file.
-  * It is used to store the bundle size reports locally for the package.
-  * TODO: needs to be reworked to leverage GHA artifacts because pushing from CI to protected branch is not allowed.
+  * Creates an artifact storage adapter for Monosize.
+  * This adapter fetches bundle size baselines from GitHub Actions artifacts
+  * using the GitHub CLI and uploads new baselines as artifacts.
  * @returns {import('monosize').StorageAdapter}
  */
-function createLocalStorage(){
-  const storedReportPath = join(import.meta.dirname, 'monosize-baseline.json');
+function createArtifactStorage(){
+  const tempDir = join(import.meta.dirname, '.temp');
+  const baselineArtifactName = 'bundle-size-baseline';
 
 /**
  *
@@ -47,23 +45,94 @@ function createLocalStorage(){
     return JSON.parse(readFileSync(reportPath, 'utf-8'))
   }
 
+  /**
+   * Downloads the latest baseline artifact from GitHub Actions
+   * @returns {Promise<string>} Path to the downloaded baseline file
+   */
+  async function downloadBaselineArtifact() {
+    // Ensure temp directory exists
+    if (!existsSync(tempDir)) {
+      mkdirSync(tempDir, { recursive: true });
+    }
+
+    try {
+      // First, try to find the latest successful workflow run on main branch
+      console.log('Looking for latest baseline artifact...');
+
+      // Get the latest successful workflow run for the baseline job
+      const listRunsCmd = `gh run list --repo microsoft/fluentui-system-icons --workflow=bundle-size.baseline.yml --branch=main --status=success --limit=1 --json databaseId`;
+      const runsOutput = execSync(listRunsCmd, { encoding: 'utf-8' });
+      /** @type {Array<{databaseId:string}>} */
+      const runs = JSON.parse(runsOutput);
+
+      if (runs.length === 0) {
+        throw new Error('No successful baseline workflow runs found');
+      }
+
+      const latestRunId = runs[0].databaseId;
+
+      // Download the artifact from the latest successful run
+      const downloadCmd = `gh run download ${latestRunId} --repo microsoft/fluentui-system-icons --name ${baselineArtifactName} --dir ${tempDir}`;
+      console.log(`Downloading baseline artifact from run ${latestRunId}...`);
+      execSync(downloadCmd, { stdio: 'inherit' });
+
+      const baselinePath = join(tempDir, 'monosize.json');
+      if (!existsSync(baselinePath)) {
+        throw new Error('Downloaded artifact does not contain monosize.json');
+      }
+
+      console.log('Successfully downloaded baseline artifact');
+      return baselinePath;
+    } catch (error) {
+      console.warn('Failed to download baseline artifact:', error.message);
+      console.log('Using empty baseline for comparison');
+
+      // Return a fallback empty baseline
+      const fallbackPath = join(tempDir, 'fallback-baseline.json');
+      writeFileSync(fallbackPath, JSON.stringify([], null, 2), 'utf-8');
+      return fallbackPath;
+    }
+  }
+
   return {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     getRemoteReport: async (_branch) => {
-      const reportPath = storedReportPath;
-      const report = getReport(reportPath);
+      const baselinePath = await downloadBaselineArtifact();
+      const report = getReport(baselinePath);
       return {
-        commitSHA: 'local',
+        commitSHA: 'artifact',
         remoteReport: report
       }
     },
     uploadReportToRemote: async () => {
-      const reportPath = join(import.meta.dirname, 'dist/bundle-size/monosize.json');
-      const report = getReport(reportPath);
-      report.forEach(entry => {
-        entry.packageName = packageName;
-      });
-      writeFileSync(storedReportPath, JSON.stringify(report, null, 2), 'utf-8');
+      try {
+        const reportPath = join(import.meta.dirname, 'dist/bundle-size/monosize.json');
+
+        if (!existsSync(reportPath)) {
+          throw new Error('Bundle size report not found at ' + reportPath);
+        }
+
+        const packageJsonPath = join(import.meta.dirname, 'package.json');
+        /** @type {{name:string}} */
+        const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
+
+        const report = getReport(reportPath);
+        const updatedReport = report.map(entry=>{
+          entry.packageName = packageJson.name;
+          return entry
+        });
+
+        writeFileSync(reportPath,JSON.stringify(updatedReport),'utf-8')
+
+        console.log('Bundle size report ready for artifact upload at:', reportPath);
+        console.log('Note: Actual artifact upload is handled by GitHub Actions workflow');
+
+        // The workflow will use actions/upload-artifact to upload this file
+        // We just need to ensure the report is generated and ready
+      } catch (error) {
+        console.error('Failed to prepare bundle size report:', error.message);
+        throw error;
+      }
     },
   }
 }
