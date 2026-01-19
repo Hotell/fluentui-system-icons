@@ -3,6 +3,7 @@ import { makeStyles } from "@griffel/react";
 
 const Atoms = React.lazy(() => import('./atoms').then(mod => ({ default: mod.Atoms })));
 const Chunk = React.lazy(() => import('./chunk').then(mod => ({ default: mod.Chunk })));
+const Colored = React.lazy(() => import('./colors').then(mod => ({ default: mod.ColoredIconsChunk })));
 const All = React.lazy(() => import('./all').then(mod => ({ default: mod.All })));
 
 const useRootStyles = makeStyles({
@@ -15,7 +16,7 @@ const useRootStyles = makeStyles({
 
 export function App() {
     const styles = useRootStyles();
-    const [state, setState] = React.useState<'atoms'|'all'|'chunk'|null>(null);
+    const [state, setState] = React.useState<'atoms'|'all'|'chunk'|'colored'|null>(null);
 
     return <main >
             <section>
@@ -43,6 +44,7 @@ export function App() {
                   {state === 'atoms' && <Atoms />}
                   {state === 'all' && <All />}
                   {state === 'chunk' && <Chunk />}
+                  {state === 'colored' && <Colored />}
                 </div>
               </React.Suspense>
               </div>
