@@ -27,6 +27,10 @@ export function App() {
                     <button onClick={() => setState('all')}>All</button>
                   </div>
                   <div>
+                    <p>Demonstration of All Colored (import all at once)</p>
+                    <button onClick={() => setState('colored')}>All Colored</button>
+                  </div>
+                  <div>
                     <p>Demonstration of Chunk icons (import a chunk of icons).</p>
                     <blockquote><p>Showcase problem with bundle size if 2 icons are not in same chunk</p></blockquote>
 
