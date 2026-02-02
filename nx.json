@@ -27,6 +27,7 @@
     "changelog": {
       "workspaceChangelog": false,
       "projectChangelogs": {
+        "renderer": "{workspaceRoot}/tools/changelog-renderer.js",
         "entryWhenNoChanges": "This release contains icon updates",
         "renderOptions": {
           "authors": false,
