@@ -32,14 +32,14 @@
     "build": "npm run build:fonts-and-svg && npm run build:generate-chunks-and-atoms && npm run build:js",
     "build-verify": "vitest run build-verify.test.js",
     "bundle-size": "monosize measure",
+    "bundle-size:griffel": "GRIFFEL_EXTRACTION=true FONT_SUBSETTING=true SVG_SUBSETTING=true npm -w @fluentui/react-icons run bundle-size",
+    "bundle-size:griffel:font-only": "GRIFFEL_EXTRACTION=true FONT_SUBSETTING=true SVG_SUBSETTING=true monosize measure --fixtures=./atomic-import.fonts.fixture.js",
+    "compare-bundles": "node scripts/compare-bundle-outputs.mjs",
     "lint": "eslint src",
     "test": "vitest --exclude build-verify.test.js",
     "type-check:infra": "../../node_modules/.bin/tsc -p tsconfig.utils.json"
   },
   "devDependencies": {
-    "@babel/core": "^7.16.0",
-    "@griffel/babel-preset": "^1.0.0",
-    "@griffel/eslint-plugin": "^2.0.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^12.1.2",
     "@types/react": "^17.0.2",

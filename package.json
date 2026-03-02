@@ -19,19 +19,27 @@
     "reset-workspace": "git clean -dXf",
     "postinstall": "patch-package",
     "format": "nx format:write",
-    "format:check": "nx format:check"
+    "format:check": "nx format:check",
+    "update-griffel": "node scripts/update-griffel.mjs"
   },
   "devDependencies": {
+    "@babel/core": "^7.16.0",
+    "@griffel/babel-preset": "1.7.0",
+    "@griffel/core": "1.19.2",
+    "@griffel/eslint-plugin": "2.0.1",
+    "@griffel/react": "1.5.32",
+    "@griffel/webpack-extraction-plugin": "0.5.12",
+    "@griffel/webpack-loader": "2.2.21",
     "@nx/js": "21.6.10",
     "eslint": "8.57.1",
+    "monosize": "0.7.1",
+    "monosize-bundler-webpack": "0.2.1",
     "nx": "21.6.10",
     "patch-package": "8.0.1",
     "prettier": "3.6.2",
     "react": "17.0.2",
     "react-dom": "17.0.2",
     "typescript": "5.0.4",
-    "typescript-eslint": "7.18.0",
-    "monosize": "0.7.1",
-    "monosize-bundler-webpack": "0.2.1"
+    "typescript-eslint": "7.18.0"
   }
 }

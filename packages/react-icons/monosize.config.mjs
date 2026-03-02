@@ -68,12 +68,18 @@ const config = {
     config.module.rules.push({
       test: /\.(ttf|woff2?|woff)$/,
       type: 'asset/resource',
+      generator: {
+        filename: `[name][ext]`,
+      },
     });
 
     // Add loader for SVG files
     config.module.rules.push({
       test: /\.svg$/,
       type: 'asset/resource',
+      generator: {
+        filename: `[name][ext]`,
+      },
     });
 
     return config;
