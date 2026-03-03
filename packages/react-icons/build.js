@@ -29,8 +29,12 @@ function main() {
 
   copyAssets('src/atoms/svg-sprite/*.svg', './lib/atoms/svg-sprite', projectRoot);
   copyAssets('src/atoms/svg-sprite/*.svg', './lib-cjs/atoms/svg-sprite', projectRoot);
+  copyAssets('src/atoms/headless-svg-sprite/*.svg', './lib/atoms/headless-svg-sprite', projectRoot);
+  copyAssets('src/atoms/headless-svg-sprite/*.svg', './lib-cjs/atoms/headless-svg-sprite', projectRoot);
   copyAssets('src/utils/fonts/*.{ttf,woff,woff2,json}', './lib/utils/fonts', projectRoot);
   copyAssets('src/utils/fonts/*.{ttf,woff,woff2,json}', './lib-cjs/utils/fonts', projectRoot);
+  copyAssets('src/headless/*.css', './lib/headless', projectRoot);
+  copyAssets('src/headless/*.css', './lib-cjs/headless', projectRoot);
 }
 
 // =================================================================================================

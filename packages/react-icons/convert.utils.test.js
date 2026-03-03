@@ -205,7 +205,11 @@ describe(`convert  utils`, () => {
           const srcFiles = files.map((f) => ({ file: f, srcFile: path.join(tmpSrc, f) }));
 
           // grouping enabled: both map to the same base and exportName -> should throw
-          await expect(generatePerIconFiles(srcFiles, { atomsDest: tmpDest }, {}, true)).rejects.toThrow(
+          await expect(generatePerIconFiles(srcFiles, { atomsDest: tmpDest }, {}, {
+            svgImportPath: '../../utils/createFluentIcon',
+            spriteTypeImportPath: '../../utils/svg-icon',
+            spriteCreateImportPath: '../../utils/svg-icon',
+          }, true)).rejects.toThrow(
             /Duplicate export name/,
           );
         } finally {
@@ -245,7 +249,11 @@ describe(`convert  utils`, () => {
         // ensure destination exists
         if (!fs.existsSync(tmpDest)) fs.mkdirSync(tmpDest, { recursive: true });
         // run generator (groupByBase true) and process all sizes
-        await generatePerIconFiles(srcFiles, { atomsDest: tmpDest }, {}, true);
+        await generatePerIconFiles(srcFiles, { atomsDest: tmpDest }, {}, {
+          svgImportPath: '../../utils/createFluentIcon',
+          spriteTypeImportPath: '../../utils/svg-icon',
+          spriteCreateImportPath: '../../utils/svg-icon',
+        }, true);
 
         // check output
         const outFile = path.join(tmpDest, 'zoom-in.tsx');
@@ -273,7 +281,11 @@ describe(`convert  utils`, () => {
         const files = await require('fs/promises').readdir(tmpSrc2);
         const srcFiles = files.map((f) => ({ file: f, srcFile: path.join(tmpSrc2, f) }));
 
-        await generatePerIconFiles(srcFiles, { atomsDest: tmpDest2 }, {}, false);
+        await generatePerIconFiles(srcFiles, { atomsDest: tmpDest2 }, {}, {
+          svgImportPath: '../../utils/createFluentIcon',
+          spriteTypeImportPath: '../../utils/svg-icon',
+          spriteCreateImportPath: '../../utils/svg-icon',
+        }, false);
 
         // expect separate files like test-20-regular.tsx and test-16-filled.tsx (based on kebab-casing)
         const outFiles = fs.readdirSync(tmpDest2);
