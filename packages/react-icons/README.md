@@ -164,7 +164,21 @@ Color icons with gradients use non-scoped `id` attributes. When multiple instanc
 
 **Workarounds:**
 
-✅ **Option 1: Use SVG sprites (recommended for multiple instances)**
+✅ **Option 1: Scope the IDs with `idPrefix` (recommended)**
+
+Pass a unique `idPrefix` per rendered instance. Every locally-defined `id` (gradients, clip paths, filters) and its matching `url(#…)` reference is prefixed, so instances no longer share IDs in the global DOM namespace. The prop only applies to `Color` variants — mono-color icons ignore it.
+
+```tsx
+<CalendarColor idPrefix="cal-a-" />
+<CalendarColor idPrefix="cal-b-" />
+```
+
+> **Tips:**
+>
+> - Provide a **stable, unique** value per instance (e.g. derived from your item key). Avoid regenerating it on every render so the icon's memoized output stays cached.
+> - For color-icon-heavy trees that re-render frequently, also consider wrapping icons in `React.memo` to skip renders entirely when props are unchanged. `React.memo` (skips the whole render when props are stable) and `idPrefix` memoization (reuses the scoped SVG tree across re-renders) are complementary.
+
+✅ **Option 2: Use SVG sprites (good for many repeated instances)**
 
 ```tsx
 <svg>
@@ -182,13 +196,13 @@ Color icons with gradients use non-scoped `id` attributes. When multiple instanc
 </svg>
 ```
 
-✅ **Option 2: Move off-screen with absolute positioning**
+✅ **Option 3: Move off-screen with absolute positioning**
 
 ```tsx
 <Icon style={{ position: 'absolute', top: '-9999px', left: '-9999px' }} />
 ```
 
-✅ **Option 3: Use `visibility: 'hidden'`** (maintains layout space)
+✅ **Option 4: Use `visibility: 'hidden'`** (maintains layout space)
 
 ##### 3. Dark Theme Contrast Issues
 
