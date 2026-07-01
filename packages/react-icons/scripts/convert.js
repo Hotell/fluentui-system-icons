@@ -54,7 +54,7 @@ async function main() {
     SPRITE_DEST,
     rtlMetadata,
     {
-      svgImportPath: '../../utils/createFluentIcon',
+      svgImportPath: '../../utils',
       spriteTypeImportPath: '../../utils/createFluentIcon.svg-sprite',
       spriteCreateImportPath: '../../utils/createFluentIcon.svg-sprite',
     },
@@ -63,7 +63,7 @@ async function main() {
   // 3. Generate headless per-icon output (+ SVG sprites when --headlessSpriteDest is provided) - when --headless is enabled
   if (HEADLESS_PER_ICON_DEST) {
     await processPerIcon(srcFiles, HEADLESS_PER_ICON_DEST, HEADLESS_SPRITE_DEST, rtlMetadata, {
-      svgImportPath: '../../headless/createFluentIcon',
+      svgImportPath: '../../headless',
       spriteTypeImportPath: '../../headless/createFluentIcon.svg-sprite',
       spriteCreateImportPath: '../../headless/createFluentIcon.svg-sprite',
     });
@@ -146,6 +146,8 @@ function processPerChunk(sourceFiles, dest, rtlMetadata) {
   // Finally add the interface definition and then write out the index.
   indexContents.push("export { wrapIcon } from './utils/wrapIcon'");
   indexContents.push("export { bundleIcon } from './utils/bundleIcon'");
+  indexContents.push("export { createFluentMonoIcon } from './utils/createFluentMonoIcon'");
+  indexContents.push("export { createFluentColorIcon } from './utils/createFluentColorIcon'");
   indexContents.push("export { createFluentIcon } from './utils/createFluentIcon'");
   indexContents.push("export * from './utils/useIconState'");
   indexContents.push("export * from './utils/constants'");
@@ -190,9 +192,10 @@ function processFolder(srcFiles, rtlMetadata, resizable) {
   // IMPORTANT: chunkCount should NEVER change after initial release to prevent reshuffling
   const iconChunks = createStableChunks(iconExports, iconNames, { chunkCount: 30 });
 
-  const chunkHeader = getCreateFluentIconHeader('../utils/createFluentIcon');
   for (const chunk of iconChunks) {
-    chunk.unshift(...chunkHeader);
+    const mono = chunk.some((line) => line.includes('createFluentMonoIcon('));
+    const color = chunk.some((line) => line.includes('createFluentColorIcon('));
+    chunk.unshift(...getCreateFluentIconHeader('../utils', { mono, color }));
   }
 
   /** @type string[] */

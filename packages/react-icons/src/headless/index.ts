@@ -26,6 +26,8 @@ export { useIconState } from './useIconState';
 export type { UseIconStateOptions } from './useIconState';
 
 // SVG icon factories
+export { createFluentMonoIcon } from './createFluentMonoIcon';
+export { createFluentColorIcon } from './createFluentColorIcon';
 export { createFluentIcon } from './createFluentIcon';
 export { bundleIcon } from './bundleIcon';
 

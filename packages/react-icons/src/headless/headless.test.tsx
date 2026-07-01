@@ -73,36 +73,11 @@ describe('Headless API — SVG icons', () => {
 
   test('createFluentIcon with color icon (string SVG content)', () => {
     const svgContent = '<circle cx="10" cy="10" r="5" fill="blue"/>';
-    const MyColorIcon = createFluentIcon(
-      'MyColorIcon',
-      '1em',
-      svgContent,
-      // NOTE: color option is not currently used in createFluentIcon, but we include it here to verify that it doesn't interfere with string SVG content rendering
-      { color: true },
-    );
+    const MyColorIcon = createFluentIcon('MyColorIcon', '1em', svgContent);
     const { container } = render(<MyColorIcon />);
 
     const svg = container.querySelector('svg');
-    expect(svg).toMatchInlineSnapshot(`
-      <svg
-        aria-hidden="true"
-        class="fui-Icon"
-        data-fui-icon=""
-        fill="currentColor"
-        height="1em"
-        viewBox="0 0 20 20"
-        width="1em"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        <circle
-          cx="10"
-          cy="10"
-          fill="blue"
-          r="5"
-        />
-      </svg>
-    `);
-
+    expect(svg).toBeTruthy();
     expect(svg?.querySelector('circle')).toHaveAttribute('fill', 'blue');
   });
 

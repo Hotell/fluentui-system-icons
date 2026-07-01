@@ -43,81 +43,49 @@ export const renderSvgNode = (node: SvgNode, key: number, prefix?: string): Reac
 export const computeViewBox = (width: string): string => (width === '1em' ? '20' : width);
 
 /**
- * Pre-renders color SVG node trees so the recursion stays out of the hot render
- * path. Returns `undefined` for mono-color (path `string[]`) icons. When
- * `prefix` is set, locally-scoped `id`s (gradients, clip paths, filters) and
- * their `url(#…)` references are prefixed so repeated color icons don't collide
- * in the global DOM id namespace.
+ * Pre-renders a color icon's `SvgNode[]` tree into React elements (keeping the
+ * recursion out of the hot render path). When `prefix` is set, locally-scoped
+ * `id`s (gradients, clip paths, filters) and their `url(#…)` references are
+ * prefixed so repeated color icons don't collide in the global DOM id namespace.
  */
-export const precomputeColorChildren = (
-  pathsOrSvg: string[] | string | SvgNode[],
-  options?: { color?: boolean },
-  prefix?: string,
-): React.ReactElement[] | undefined =>
-  typeof pathsOrSvg !== 'string' && (options?.color || Array.isArray(pathsOrSvg[0]))
-    ? (pathsOrSvg as SvgNode[]).map((node, i) => renderSvgNode(node, i, prefix))
-    : undefined;
-
-/** Shared mono-color resolver — calls no hooks and allocates nothing per component. */
-const noColorChildren = (): React.ReactElement[] | undefined => undefined;
+export const precomputeColorChildren = (nodes: SvgNode[], prefix?: string): React.ReactElement[] =>
+  nodes.map((node, i) => renderSvgNode(node, i, prefix));
 
 /**
  * Creates a per-component resolver for a color icon's rendered children.
  *
- * Color detection and the shared (unscoped) precompute run once here, at factory
- * time. The returned hook:
- * - for mono-color icons, is a shared no-op returning `undefined` (no React hook,
- *   no per-component or per-instance allocation);
- * - for color icons, memoizes per instance on `idPrefix`, so re-renders reuse the
- *   element tree and only rebuild when the prefix actually changes.
- *
- * Branching here (an icon's "color-ness" is fixed at factory time) keeps hook
- * order stable per component, so only color icons ever pay for the memo hook.
+ * The shared (unscoped) precompute runs once here, at factory time. The returned
+ * hook memoizes per instance on `idPrefix`, so re-renders reuse the element tree
+ * and only rebuild when the prefix actually changes.
  */
-export const createColorChildrenResolver = (
-  pathsOrSvg: string[] | string | SvgNode[],
-  options?: { color?: boolean },
-): ((idPrefix?: string) => React.ReactElement[] | undefined) => {
-  const colorChildren = precomputeColorChildren(pathsOrSvg, options);
-  if (!colorChildren) {
-    return noColorChildren;
-  }
+export const createColorChildrenResolver = (nodes: SvgNode[]): ((idPrefix?: string) => React.ReactElement[]) => {
+  const colorChildren = precomputeColorChildren(nodes);
   return function useColorChildren(idPrefix?: string) {
-    return React.useMemo(
-      () => (idPrefix ? precomputeColorChildren(pathsOrSvg, options, idPrefix) : colorChildren),
-      [idPrefix],
-    );
+    return React.useMemo(() => (idPrefix ? precomputeColorChildren(nodes, idPrefix) : colorChildren), [idPrefix]);
   };
 };
 
 type RenderSvgState = { fill?: string };
 
 /**
- * Renders the `<svg>` element body for an already-resolved element `state`.
- * Handles the three content forms:
- * - raw innerHTML `string` (deprecated, CSP-unsafe `dangerouslySetInnerHTML`),
- * - pre-rendered color children ({@link createColorChildrenResolver}),
- * - mono-color path `d` strings.
+ * Renders the `<svg>` body for a **mono-color** icon from path `d` strings.
+ * Deliberately references no color/`SvgNode` code so mono icons never bundle it.
  *
  * `state` must already carry className/fill/width/height/viewBox/xmlns/ref.
  */
-export const renderSvgBody = <TState extends RenderSvgState>(
+export const renderMonoBody = <TState extends RenderSvgState>(state: TState, paths: string[]): React.ReactElement =>
+  React.createElement('svg', state, ...paths.map((d) => React.createElement('path', { d, fill: state.fill })));
+
+/**
+ * Renders the `<svg>` body for a **color** icon from its pre-rendered
+ * {@link createColorChildrenResolver} children.
+ *
+ * `state` must already carry className/fill/width/height/viewBox/xmlns/ref.
+ */
+export const renderColorBody = <TState extends RenderSvgState>(
   state: TState,
-  pathsOrSvg: string[] | string | SvgNode[],
-  colorChildren: React.ReactElement[] | undefined,
-): React.ReactElement => {
-  if (typeof pathsOrSvg === 'string') {
-    return React.createElement('svg', { ...state, dangerouslySetInnerHTML: { __html: pathsOrSvg } });
-  }
-  if (colorChildren) {
-    return React.createElement('svg', state, ...colorChildren);
-  }
-  return React.createElement(
-    'svg',
-    state,
-    ...(pathsOrSvg as string[]).map((d) => React.createElement('path', { d, fill: state.fill })),
-  );
-};
+  colorChildren: React.ReactElement[],
+): React.ReactElement => React.createElement('svg', state, ...colorChildren);
 
 /**
  * Renders the `<svg>` element body for a sprite icon — references an external
