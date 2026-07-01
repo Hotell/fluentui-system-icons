@@ -104,15 +104,25 @@ function parseSvgToNodes(svgString) {
 
 /**
  * Returns the standard header lines used in generated icon files.
- * @param {string} relImport - relative import path to createFluentIcon
+ *
+ * Imports only the factory(ies) the file actually uses so mono icons never bundle
+ * color code. The `FluentIcon` type is always taken from the mono factory module
+ * (its canonical definition; type-only, erased at build).
+ *
+ * @param {string} baseImport - relative import path to the `utils`/`headless` dir
+ *   (e.g. `'../utils'`, `'../../utils'`).
+ * @param {{ mono?: boolean; color?: boolean }} [factories] - which factories the file uses
  * @returns {string[]}
  */
-function getCreateFluentIconHeader(relImport) {
-  return [
-    `"use client";`,
-    `import type { FluentIcon } from '${relImport}';`,
-    `import { createFluentIcon } from '${relImport}';`,
-  ];
+function getCreateFluentIconHeader(baseImport, factories = { mono: true, color: true }) {
+  const lines = [`"use client";`, `import type { FluentIcon } from '${baseImport}/createFluentMonoIcon';`];
+  if (factories.mono) {
+    lines.push(`import { createFluentMonoIcon } from '${baseImport}/createFluentMonoIcon';`);
+  }
+  if (factories.color) {
+    lines.push(`import { createFluentColorIcon } from '${baseImport}/createFluentColorIcon';`);
+  }
+  return lines;
 }
 
 /**
@@ -185,25 +195,18 @@ function parseIconSource(opts) {
 function buildIconExportCode(parsed) {
   const { exportName, iconData, width, isColor, flipInRtl } = parsed;
   const widthStr = `"${width}"`;
-  const options =
-    flipInRtl && isColor
-      ? ', { flipInRtl: true, color: true }'
-      : flipInRtl
-        ? ', { flipInRtl: true }'
-        : isColor
-          ? ', { color: true }'
-          : '';
+  const options = flipInRtl ? ', { flipInRtl: true }' : '';
 
   const deprecatedPrefix =
     '/** @deprecated Color icons are deprecated. [See User Guidance](https://microsoft.github.io/fluentui-system-icons/?path=/docs/icons-user-guidance--docs#color-variants-deprecated) */\n';
 
   if ('nodes' in iconData) {
     const nodesStr = JSON.stringify(iconData.nodes);
-    return `${isColor ? deprecatedPrefix : ''}export const ${exportName}: FluentIcon = (/*#__PURE__*/createFluentIcon('${exportName}', ${widthStr}, ${nodesStr}${options}));`;
+    return `${deprecatedPrefix}export const ${exportName}: FluentIcon = (/*#__PURE__*/createFluentColorIcon('${exportName}', ${widthStr}, ${nodesStr}${options}));`;
   }
 
   const paths = iconData.paths.map((p) => `"${p}"`).join(',');
-  return `export const ${exportName}: FluentIcon = (/*#__PURE__*/createFluentIcon('${exportName}', ${widthStr}, [${paths}]${options}));`;
+  return `export const ${exportName}: FluentIcon = (/*#__PURE__*/createFluentMonoIcon('${exportName}', ${widthStr}, [${paths}]${options}));`;
 }
 
 /**
@@ -272,10 +275,15 @@ async function generatePerIconFiles(sourceFiles, dest, rtlMetadata, importConfig
 
   // merge both sets into a single write — grouping logic in writePerIconFiles
   // co-locates resizable + sized variants for the same icon in one file
-  const svgHeader = getCreateFluentIconHeader(importConfig.svgImportPath);
-  const { fileCount } = await writePerIconFiles(atomsDest, [...resizableItems, ...sizedItems], svgHeader, {
-    groupByBase,
-  });
+  const svgBase = importConfig.svgImportPath;
+  const { fileCount } = await writePerIconFiles(
+    atomsDest,
+    [...resizableItems, ...sizedItems],
+    (factories) => getCreateFluentIconHeader(svgBase, factories),
+    {
+      groupByBase,
+    },
+  );
 
   // Optionally generate SVG sprite pairs (.svg + .tsx) from the same enriched data
   let spriteFileCount = 0;

@@ -6,6 +6,8 @@
 // it via a headless transform is accepted breakage.
 
 export { bundleIcon } from './bundleIcon';
+export { createFluentMonoIcon } from './createFluentMonoIcon';
+export { createFluentColorIcon } from './createFluentColorIcon';
 export { createFluentIcon } from './createFluentIcon';
 export { useIconState } from './useIconState';
 export {

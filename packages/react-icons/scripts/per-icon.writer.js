@@ -83,13 +83,14 @@ function assertNoDuplicateExports(items, groupBase, destPath) {
  * Write grouped per-icon .tsx files.
  *
  * @param {string} destPath
- * @param {Array<{ exportName: string; fileName: string; exportCode: string; [k: string]: any }>} items
- * @param {string[]} headerLines - header lines to prepend to each generated file
+ * @param {Array<{ exportName: string; fileName: string; exportCode: string; isColor?: boolean; [k: string]: any }>} items
+ * @param {string[] | ((factories: { mono: boolean; color: boolean }) => string[])} header - static
+ *   header lines, or a builder invoked per file with which factories its icons use
  * @param {WriteOptions} [options]
  * @returns {Promise<{ fileCount: number }>}
  */
-async function writePerIconFiles(destPath, items, headerLines, options = { groupByBase: true }) {
-  const header = headerLines;
+async function writePerIconFiles(destPath, items, header, options = { groupByBase: true }) {
+  const buildHeader = typeof header === 'function' ? header : () => header;
   const groups = groupItemsByBase(destPath, items, options);
 
   if (!fs.existsSync(destPath)) {
@@ -99,8 +100,11 @@ async function writePerIconFiles(destPath, items, headerLines, options = { group
   let fileCount = 0;
 
   for (const [base, groupItems] of groups) {
+    const mono = groupItems.some((icon) => !icon.isColor);
+    const color = groupItems.some((icon) => icon.isColor);
+    const headerLines = buildHeader({ mono, color });
     const exportLines = groupItems.map((icon) => icon.exportCode);
-    const fileSource = header.concat(exportLines).join('\n') + '\n';
+    const fileSource = headerLines.concat(exportLines).join('\n') + '\n';
 
     const filePath = path.join(destPath, `${base}.tsx`);
     await fsP.writeFile(filePath, fileSource, 'utf8');

@@ -14,16 +14,23 @@ import {
 describe(`convert  utils`, () => {
   describe(`getCreateFluentIconHeader`, () => {
     it('returns expected header lines from getCreateFluentIconHeader', () => {
-      const header = getCreateFluentIconHeader('../utils/createFluentIcon');
+      const header = getCreateFluentIconHeader('../utils', { mono: true, color: true });
       expect(Array.isArray(header)).toBe(true);
-      expect(header).toHaveLength(3);
+      expect(header).toHaveLength(4);
       expect(header).toMatchInlineSnapshot(`
-      [
-        "\"use client\";",
-        "import type { FluentIcon } from '../utils/createFluentIcon';",
-        "import { createFluentIcon } from '../utils/createFluentIcon';",
-      ]
-    `);
+        [
+          ""use client";",
+          "import type { FluentIcon } from '../utils/createFluentMonoIcon';",
+          "import { createFluentMonoIcon } from '../utils/createFluentMonoIcon';",
+          "import { createFluentColorIcon } from '../utils/createFluentColorIcon';",
+        ]
+      `);
+    });
+
+    it('imports only the mono factory for mono-only files', () => {
+      const header = getCreateFluentIconHeader('../utils', { mono: true, color: false });
+      expect(header).not.toContain("import { createFluentColorIcon } from '../utils/createFluentColorIcon';");
+      expect(header).toContain("import { createFluentMonoIcon } from '../utils/createFluentMonoIcon';");
     });
   });
 
@@ -152,9 +159,10 @@ describe(`convert  utils`, () => {
         flipInRtl: false,
       });
       expect(code).toMatchInlineSnapshot(
-        `"export const AccessTime: FluentIcon = (/*#__PURE__*/createFluentIcon('AccessTime', "1em", ["M1 2 3"]));"`,
+        `"export const AccessTime: FluentIcon = (/*#__PURE__*/createFluentMonoIcon('AccessTime', "1em", ["M1 2 3"]));"`,
       );
       expect(code).not.toContain('color: true');
+      expect(code).toContain('createFluentMonoIcon');
     });
 
     it('generates export code for color icon with rawSvg and nodes', () => {
@@ -172,14 +180,13 @@ describe(`convert  utils`, () => {
         isColor: true,
         flipInRtl: false,
       });
-      expect(code).toMatchInlineSnapshot(
-        `
+      expect(code).toMatchInlineSnapshot(`
         "/** @deprecated Color icons are deprecated. [See User Guidance](https://microsoft.github.io/fluentui-system-icons/?path=/docs/icons-user-guidance--docs#color-variants-deprecated) */
-        export const PatientColor: FluentIcon = (/*#__PURE__*/createFluentIcon('PatientColor', \"20\", [[\"g\",{\"fill\":\"#000\"}],[\"path\",{\"d\":\"M1 2\",\"fill\":\"#ff0000\"}]], { color: true }));"
-      `,
-      );
+        export const PatientColor: FluentIcon = (/*#__PURE__*/createFluentColorIcon('PatientColor', "20", [["g",{"fill":"#000"}],["path",{"d":"M1 2","fill":"#ff0000"}]]));"
+      `);
       expect(code).toContain('fill');
-      expect(code).toContain('color: true');
+      expect(code).not.toContain('color: true');
+      expect(code).toContain('createFluentColorIcon');
     });
 
     it('includes flipInRtl option when set', () => {
@@ -192,7 +199,7 @@ describe(`convert  utils`, () => {
         flipInRtl: true,
       });
       expect(code).toMatchInlineSnapshot(
-        `"export const Arrow: FluentIcon = (/*#__PURE__*/createFluentIcon('Arrow', "1em", ["M0 0"], { flipInRtl: true }));"`,
+        `"export const Arrow: FluentIcon = (/*#__PURE__*/createFluentMonoIcon('Arrow', "1em", ["M0 0"], { flipInRtl: true }));"`,
       );
       expect(code).toContain('flipInRtl');
     });

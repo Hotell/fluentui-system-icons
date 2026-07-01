@@ -18,8 +18,8 @@ describe('writePerIconFiles', () => {
       { exportName: 'Test20Filled', exportCode: 'export const Test20Filled = 1;', fileName: 'test-20-filled.tsx' },
       { exportName: 'Test16Regular', exportCode: 'export const Test16Regular = 2;', fileName: 'test-16-regular.tsx' },
     ];
-    const header = ['// header'];
-    const res = await writePerIconFiles(tmpDest, items, header, { groupByBase: true });
+    const buildHeader = () => ['// header'];
+    const res = await writePerIconFiles(tmpDest, items, buildHeader, { groupByBase: true });
 
     expect(res.fileCount).toBe(1);
     const files = fs.readdirSync(tmpDest);
@@ -44,7 +44,7 @@ describe('writePerIconFiles', () => {
       { exportName: 'Dup20Filled', exportCode: 'export const Dup20Filled = 2;', fileName: 'dup-22-filled.tsx' },
     ];
     await expect(
-      writePerIconFiles(tmpDest, items, [], { groupByBase: true }),
+      writePerIconFiles(tmpDest, items, () => [], { groupByBase: true }),
     ).rejects.toThrowErrorMatchingInlineSnapshot(
       `[Error: Duplicate export name(s) detected in group 'dup' while generating to '${tmpDest}': exportName='Dup20Filled' -> files=[dup-20-filled.tsx, dup-22-filled.tsx]. This indicates multiple source inputs generated the same export name and should be fixed.]`,
     );
